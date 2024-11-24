@@ -7,13 +7,23 @@ const App = () => {
   const [newName, setNewName] = useState('')
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    if(newName){
-      setPersons([...persons, {name: newName}])
-    }else{
-      alert('Please enter a number')
+    e.preventDefault();
+    const alreadyExist = persons.some((person) => person.name === newName);
+  
+    if (!newName.trim()) {
+      alert('Please enter a name');
+      return;
     }
-  }
+  
+    if (alreadyExist) {
+      alert(`${newName} is already added to the phonebook`);
+      return;
+    }
+  
+    setPersons([...persons, { name: newName }]);
+    setNewName(''); 
+  };
+  
 
   const handleChange = (e) =>{
     const value = e.currentTarget.value
