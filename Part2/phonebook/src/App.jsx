@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import Form from "./components/Form";
 import Numbers from "./components/Numbers";
-import axios from "axios"
+import { getAll, saveContact } from "./services/phonebook";
 
 const App = () => {
   const [persons, setPersons] = useState(null);
@@ -10,14 +10,14 @@ const App = () => {
   const [newNumber, setNewNumber] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-
-  useEffect(() => {
-  axios.get('http://localhost:3001/persons').then((response)=> {
-    setPersons(response.data)
-  })
-  }, [])
   
-
+  useEffect(() => {
+    getAll().then((resp) => {
+      setPersons(resp);
+    }).catch((error)=>{
+      console.error(error)
+    })
+  }, []);
 
   const filteredPersons = persons?.filter(
     (persons) =>
@@ -42,7 +42,18 @@ const App = () => {
       return;
     }
 
-    setPersons([...persons, { name: newName, number: newNumber , id: persons.length + 1 }]);
+    const newPerson =  { 
+      name: newName,
+      number: newNumber,
+      id: persons.length + 1
+    }
+
+    setPersons([
+      ...persons,
+      newPerson
+    ])
+    saveContact(newPerson)
+
     setNewName("");
     setNewNumber("");
   };
@@ -71,9 +82,9 @@ const App = () => {
         newName={newName}
         newNumber={newNumber}
       />
-   
+
       <Form handleChange={handleChange} handleSubmit={handleSubmit} />
-      
+
       <Numbers
         searchQuery={searchQuery}
         filteredPersons={filteredPersons}
