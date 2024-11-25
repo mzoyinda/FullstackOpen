@@ -7,7 +7,7 @@ const {searchQuery, filteredPersons, persons} = props
     <div>
         <h2>Numbers</h2>
       <div>
-        {(searchQuery ? filteredPersons : persons).map((person) => (
+        {(searchQuery ? filteredPersons : persons)?.map((person) => (
           <p key={person.id}>
             {person.name}: {person.number}
           </p>
