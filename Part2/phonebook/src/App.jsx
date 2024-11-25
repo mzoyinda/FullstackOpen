@@ -2,60 +2,69 @@ import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import Form from "./components/Form";
 import Numbers from "./components/Numbers";
-import { getAll, saveContact } from "./services/phonebook";
+import { deleteContact, getAllContacts, saveContact, updateContact } from "./services/phonebook";
 
 const App = () => {
-  const [persons, setPersons] = useState(null);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  
   useEffect(() => {
-    getAll().then((resp) => {
+    getAllContacts().then((resp) => {
       setPersons(resp);
-    }).catch((error)=>{
-      console.error(error)
-    })
+    }).catch((error) => {
+      console.error(error);
+    });
   }, []);
 
-  const filteredPersons = persons?.filter(
-    (persons) =>
-      persons.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      persons.number.includes(searchQuery)
+  const filteredPersons = persons.filter(
+    (person) =>
+      person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      person.number.includes(searchQuery)
   );
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!newName.trim() || !newNumber.trim()) {
-      alert("Please fill all inputs");
-      return;
+      return alert("Please fill all inputs");
     }
 
-    const alreadyExist = persons?.some(
+    const existingPerson = persons.find(
       (person) => person.name === newName || person.number === newNumber
     );
 
-    if (alreadyExist) {
-      alert(`${newName} is already added to the phonebook`);
-      return;
-    }
-
-    const newPerson =  { 
+    const newPerson = {
+      ...existingPerson,
       name: newName,
       number: newNumber,
-      id: persons.length + 1
-    }
+      id: existingPerson ? existingPerson.id : String(Date.now()),
+    };
 
-    setPersons([
-      ...persons,
-      newPerson
-    ])
-    saveContact(newPerson)
+    const saveAction = existingPerson
+      ? window.confirm(
+          `${newName} is already in the phonebook. Replace the old number with a new one?`
+        )
+        ? updateContact(existingPerson.id, newPerson)
+        : Promise.resolve()
+      : saveContact(newPerson);
 
-    setNewName("");
-    setNewNumber("");
+    saveAction
+      .then(() => {
+        setPersons((prevPersons) =>
+          existingPerson
+            ? prevPersons.map((person) =>
+                person.id === existingPerson.id ? newPerson : person
+              )
+            : [...prevPersons, newPerson]
+        );
+        alert(existingPerson ? "Contact updated successfully!" : "Contact added successfully!");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert(`Failed to ${existingPerson ? "update" : "add"} the contact. Please try again.`);
+      });
   };
 
   const handleChange = (e) => {
@@ -71,6 +80,20 @@ const App = () => {
   const handleSearchChange = (e) => {
     const value = e.currentTarget.value;
     setSearchQuery(value);
+  };
+
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      deleteContact(id)
+        .then(() => {
+          setPersons((prevPersons) => prevPersons.filter((person) => person.id !== id));
+          alert("Contact deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Error deleting contact:", error);
+          alert("Failed to delete the contact. Please try again.");
+        });
+    }
   };
 
   return (
@@ -89,6 +112,7 @@ const App = () => {
         searchQuery={searchQuery}
         filteredPersons={filteredPersons}
         persons={persons}
+        handleDelete={handleDelete}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import React from "react";
 
 const Numbers = (props) => {
-const {searchQuery, filteredPersons, persons} = props
+const {searchQuery, filteredPersons, persons, handleDelete} = props
 
   return (
     <div>
@@ -9,7 +9,7 @@ const {searchQuery, filteredPersons, persons} = props
       <div>
         {(searchQuery ? filteredPersons : persons)?.map((person) => (
           <p key={person.id}>
-            {person.name}: {person.number}
+            {person.name}: {person.number} <button onClick={()=>handleDelete(person.id, person.name)}>Delete</button>
           </p>
         ))}
       </div>
