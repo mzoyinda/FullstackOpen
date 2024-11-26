@@ -9,8 +9,6 @@ const App = () => {
 
   const API_KEY = import.meta.env.VITE_WEATHER_KEY;
 
-  console.log(API_KEY)
-
   const handleChange = (e) => {
     setSearch(e.target.value);
      // Reset the selected country and weather when changing the search query
