@@ -1,14 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { useState } from "react";
 
 const App = () => {
   const [search, setSearch] = useState("");
-  const [countries, setCountries] = useState(null);
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [weather, setWeather] = useState(null);
+
+  const API_KEY = import.meta.env.VITE_WEATHER_KEY;
+
+  console.log(API_KEY)
 
   const handleChange = (e) => {
-    const value = e.currentTarget.value;
-    setSearch(value);
+    setSearch(e.target.value);
+     // Reset the selected country and weather when changing the search query
+    setSelectedCountry(null);
+    setWeather(null);
   };
 
   useEffect(() => {
@@ -30,7 +37,26 @@ const App = () => {
     );
   });
 
-  const displayedCountries = search ? filteredCountries : countries;
+  const fetchWeather = (capital) => {
+    if (!capital) return;
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${capital}&units=metric&appid=${API_KEY}`;
+    axios
+      .get(url)
+      .then((response) => {
+        setWeather(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching weather:", error);
+      });
+  };
+
+  const handleShowCountry = (country) => {
+    setSelectedCountry(country);
+    // Reset previous weather data
+    setWeather(null); 
+    // Fetch weather for the country's capital
+    fetchWeather(country.capital?.[0]);
+  };
 
   return (
     <div>
@@ -41,41 +67,67 @@ const App = () => {
       </p>
 
       <div>
-        {search && displayedCountries?.length > 10 && (
-          <p>Too many matches, specify another</p>
+        {search && filteredCountries.length > 10 && (
+          <p>Too many matches, specify another query</p>
         )}
+
         {search &&
-          displayedCountries?.length <= 10 &&
-          displayedCountries.length > 1 && (
+          filteredCountries.length <= 10 &&
+          filteredCountries.length > 1 &&
+          !selectedCountry && (
             <ul>
-              {displayedCountries.map((country) => (
-                <li key={country.name.common}>{country.name.common}</li>
+              {filteredCountries.map((country) => (
+                <li key={country.name.common}>
+                  {country.name.common}{" "}
+                  <button onClick={() => handleShowCountry(country)}>Show</button>
+                </li>
               ))}
             </ul>
           )}
-        {search && displayedCountries.length === 1 && (
+
+        {selectedCountry && (
           <div>
-            <h2>{displayedCountries[0].name.common}</h2>
+            <h2>{selectedCountry.name.common}</h2>
             <p>
-              <strong>Capital:</strong> {displayedCountries[0].capital?.[0]}
+              <strong>Capital:</strong> {selectedCountry.capital?.[0]}
             </p>
             <p>
-              <strong>Area:</strong> {displayedCountries[0].area} km²
+              <strong>Area:</strong> {selectedCountry.area} km²
             </p>
+            <p>
               <strong>Languages:</strong>
-              <ul>
-              {Object.values(displayedCountries[0].languages).map((language, index) => (
+            </p>
+            <ul>
+              {Object.values(selectedCountry.languages).map((language, index) => (
                 <li key={index}>{language}</li>
               ))}
             </ul>
             <img
-              src={displayedCountries[0].flags.svg}
-              alt={`${displayedCountries[0].name.common} flag`}
+              src={selectedCountry.flags.svg}
+              alt={`${selectedCountry.name.common} flag`}
               style={{ width: "200px", height: "auto" }}
             />
+
+            {weather ? (
+              <div>
+                <h2>Weather in {selectedCountry.capital?.[0]}</h2>
+                <p>
+                  <strong>Temperature:</strong> {weather.main.temp} °C
+                </p>
+                <p>
+                  <strong>Weather:</strong> {weather.weather[0].description}
+                </p>
+                <p>
+                  <strong>Wind:</strong> {weather.wind.speed} m/s
+                </p>
+              </div>
+            ) : (
+              <p>Loading weather...</p>
+            )}
           </div>
         )}
-        {search && displayedCountries?.length === 0 && <p>No matches found.</p>}
+
+        {search && filteredCountries.length === 0 && <p>No matches found.</p>}
       </div>
     </div>
   );
