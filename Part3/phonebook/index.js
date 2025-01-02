@@ -56,6 +56,20 @@ const generateId = () => {
 app.post('/api/persons', (request, response) => {
     const body = request.body
 
+    if(!body.number || !body.name){
+        return response.status(404).json({
+            error: "Name or Number cannot be empty"
+        })
+    }
+
+    const nameExists = persons.find((person) => person.name === body.name)
+
+    if(nameExists){
+        return response.status(400).json({
+            error: "name must be unique"
+        })
+    }
+
     const person = {
         id: generateId(),
         name: body.name,
@@ -63,7 +77,7 @@ app.post('/api/persons', (request, response) => {
     }
 
     persons.push(person)
-    response.json(person)
+    response.status(201).json(person)
 })
 
 app.delete('/api/persons/:id', (request, response) => {
