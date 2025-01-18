@@ -57,7 +57,7 @@ const App = () => {
         `${newName} is already in the phonebook. Do you want to update the contact?`
       );
 
-      const existingPersonId = existingPerson.id; // Use ID as is, do not convert it to a number.
+      const existingPersonId = existingPerson.id; 
 
       if (confirmUpdate) {
         // Update user
