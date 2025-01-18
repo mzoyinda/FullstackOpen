@@ -12,8 +12,7 @@ export const saveContact = newObject => {
 }
 
 export const updateContact = (id, newObject) => {
-  const newId = Number(id)
-  const request = axios.put(`${baseUrl}/${newId}`, newObject)
+  const request = axios.put(`${baseUrl}/${id}`, newObject)
   return request.then(response => response.data)
 }
 

@@ -2,25 +2,32 @@ import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import Form from "./components/Form";
 import Numbers from "./components/Numbers";
-import { deleteContact, getAllContacts, saveContact, updateContact } from "./services/phonebook";
-import "./index.css"
+import {
+  deleteContact,
+  getAllContacts,
+  saveContact,
+  updateContact,
+} from "./services/phonebook";
+import "./index.css";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [errorMessage, setErrorMessage] = useState("")
-  const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    getAllContacts().then((resp) => {
-      setPersons(resp);
-    }).catch((error) => {
-      console.error(error);
-    });
-    setErrorMessage('')
-    setSuccessMessage('')
+    getAllContacts()
+      .then((resp) => {
+        setPersons(resp);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+    setErrorMessage("");
+    setSuccessMessage("");
   }, []);
 
   const filteredPersons = persons.filter(
@@ -31,68 +38,63 @@ const App = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-  
+
     if (!newName.trim() || !newNumber.trim()) {
       return alert("Please fill all inputs");
     }
-  
-    const existingPerson = persons.find(
-      (person) => person.name === newName || person.number === newNumber
-    );
-  
+
     const newPerson = {
-      ...existingPerson,
       name: newName,
       number: newNumber,
-      id: existingPerson ? existingPerson.id : String(Date.now()),
     };
-  
-    const saveAction = existingPerson
-      ? window.confirm(
-          `${newName} is already in the phonebook. Replace the old number with a new one?`
-        )
-        ? updateContact(existingPerson.id, newPerson)
-        : Promise.resolve()
-      : saveContact(newPerson);
-  
-    saveAction
-      .then(() => {
-        setPersons((prevPersons) =>
-          existingPerson
-            ? prevPersons.map((person) =>
-                person.id === existingPerson.id ? newPerson : person
+
+    // Check if the person already exists
+    const existingPerson = persons.find((person) => person.name === newName);
+    console.log(existingPerson);
+
+    if (existingPerson) {
+      const confirmUpdate = window.confirm(
+        `${newName} is already in the phonebook. Do you want to update the contact?`
+      );
+
+      const existingPersonId = existingPerson.id; // Use ID as is, do not convert it to a number.
+
+      if (confirmUpdate) {
+        // Update user
+        updateContact(existingPersonId, newPerson)
+          .then((updatedPerson) => {
+            setPersons((prevPersons) =>
+              prevPersons.map((person) =>
+                person.id === existingPersonId ? updatedPerson : person
               )
-            : [...prevPersons, newPerson]
-        );
-        existingPerson
-          ? setSuccessMessage(`${newName} updated successfully!`)
-          : setSuccessMessage(`Added ${newName} successfully!`);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-  
-        const status = error?.response?.status || error?.status;
-  
-        if (status === 404) {
+            );
+            setSuccessMessage(`Updated ${newName} successfully!`);
+          })
+          .catch((error) => {
+            setErrorMessage(
+              error.response?.data?.error || "Failed to update contact."
+            );
+          });
+      }
+    } else {
+      // Save the new contact
+      saveContact(newPerson)
+        .then(() => {
+          setPersons((prevPersons) => [...prevPersons, newPerson]);
+          setSuccessMessage(`Added ${newName} successfully!`);
+        })
+        .catch((error) => {
           setErrorMessage(
-            `${existingPerson.name} was already removed from the server.`
+            error.response?.data?.error || "Failed to save contact."
           );
-          setPersons((prevPersons) =>
-            prevPersons.filter((person) => person.id !== existingPerson.id)
-          );
-        } else {
-          setErrorMessage(
-            `Failed to ${existingPerson ? "update" : "add"} the contact. Please try again.`
-          );
-        }
-      });
+        });
+    }
   };
-  
 
   const handleChange = (e) => {
     const { name, value } = e.currentTarget;
-    setErrorMessage('')
-    setSuccessMessage('')
+    setErrorMessage("");
+    setSuccessMessage("");
 
     if (name === "contact") {
       setNewName(value);
@@ -107,10 +109,13 @@ const App = () => {
   };
 
   const handleDelete = (id, name) => {
+    console.log(id);
     if (window.confirm(`Delete ${name}?`)) {
       deleteContact(id)
         .then(() => {
-          setPersons((prevPersons) => prevPersons.filter((person) => person.id !== id));
+          setPersons((prevPersons) =>
+            prevPersons.filter((person) => person.id !== id)
+          );
           setErrorMessage(`${name} deleted successfully!`);
         })
         .catch((error) => {
