@@ -29,7 +29,7 @@ const phone = new Phone({
 })
 
 if(name && number){
-  phone.save().then(result => {
+  phone.save().then(() => {
     console.log(`added ${name} number ${number} to phonebook`)
     mongoose.connection.close()
   })
